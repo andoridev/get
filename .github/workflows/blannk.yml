@@ -1,0 +1,55 @@
+name: Example Scheduled Curl Action
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'  # Schedule execution every 6 hours
+
+jobs:
+  curl:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v2
+
+    - name: Remove existing file
+      run: |
+        if [ -f "tv_pro485726.m3u8" ]; then
+          rm tv_pro485726.m3u8
+        fi
+
+    - name: Run Curl
+      run: |
+        if ! curl -o tv_pro485726.m3u8 https://hometeve.my.id/PL/tv_pro485726.m3u; then
+          echo "Download failed, aborting the job."
+          exit 1
+        fi
+
+    - name: Configure Git
+      run: |
+        git config --global user.email "you@example.com"
+        git config --global user.name "Your Name"
+
+    - name: Check for Changes
+      run: |
+        if git diff --quiet tv_pro485726.m3u8; then
+          echo "No changes detected, skipping commit."
+          exit 0
+        fi
+
+    - name: Pull changes from remote
+      run: |
+        git pull origin main --rebase || true  # Allow the pull to fail gracefully
+
+    - name: Resolve Merge Conflicts
+      run: |
+        git add tv_pro485726.m3u8
+        git commit -m "Merge conflicts resolved" || true  # Allow the commit to fail if there are no changes
+
+    - name: Add and Commit file to repository
+      run: |
+        git add tv_pro485726.m3u8
+        git commit -m "Update tv_pro485726.m3u8"
+
+    - name: Push Changes
+      run: |
+        git push origin main || (git pull origin main --rebase && git push origin main)
